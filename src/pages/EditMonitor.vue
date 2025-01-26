@@ -54,6 +54,27 @@
                                         </option>
                                     </optgroup>
 
+                                    <optgroup :label="$t('databaseMonitorType')">
+                                        <option value="sqlserver">
+                                            Microsoft SQL Server
+                                        </option>
+                                        <option value="mongodb">
+                                            MongoDB
+                                        </option>
+                                        <option value="mysql">
+                                            MySQL/MariaDB
+                                        </option>
+                                        <option value="postgres">
+                                            PostgreSQL
+                                        </option>
+                                        <option value="oracledb">
+                                            Oracle Database
+                                        </option>
+                                        <option value="redis">
+                                            Redis
+                                        </option>
+                                    </optgroup>
+
                                     <optgroup :label="$t('Specific Monitor Type')">
                                         <option value="steam">
                                             {{ $t("Steam Game Server") }}
@@ -70,23 +91,8 @@
                                         <option value="kafka-producer">
                                             Kafka Producer
                                         </option>
-                                        <option value="sqlserver">
-                                            Microsoft SQL Server
-                                        </option>
-                                        <option value="postgres">
-                                            PostgreSQL
-                                        </option>
-                                        <option value="mysql">
-                                            MySQL/MariaDB
-                                        </option>
-                                        <option value="mongodb">
-                                            MongoDB
-                                        </option>
                                         <option value="radius">
                                             Radius
-                                        </option>
-                                        <option value="redis">
-                                            Redis
                                         </option>
                                         <option v-if="!$root.info.isContainer" value="tailscale-ping">
                                             Tailscale Ping
@@ -516,7 +522,7 @@
                             </template>
 
                             <!-- SQL Server / PostgreSQL / MySQL / Redis / MongoDB -->
-                            <template v-if="monitor.type === 'sqlserver' || monitor.type === 'postgres' || monitor.type === 'mysql' || monitor.type === 'redis' || monitor.type === 'mongodb'">
+                            <template v-if="monitor.type === 'sqlserver' || monitor.type === 'postgres' || monitor.type === 'mysql' || monitor.type === 'redis' || monitor.type === 'mongodb'  || monitor.type === 'oracledb'">
                                 <div class="my-3">
                                     <label for="connectionString" class="form-label">{{ $t("Connection String") }}</label>
                                     <input id="connectionString" v-model="monitor.databaseConnectionString" type="text" class="form-control" required>
@@ -530,9 +536,10 @@
                                     <HiddenInput id="mysql-password" v-model="monitor.radiusPassword" autocomplete="false"></HiddenInput>
                                 </div>
                             </template>
+                            
 
-                            <!-- SQL Server / PostgreSQL / MySQL -->
-                            <template v-if="monitor.type === 'sqlserver' || monitor.type === 'postgres' || monitor.type === 'mysql'">
+                            <!-- SQL Server / PostgreSQL / MySQL / Oracle -->
+                            <template v-if="monitor.type === 'sqlserver' || monitor.type === 'postgres' || monitor.type === 'mysql' || monitor.type === 'oracledb'">
                                 <div class="my-3">
                                     <label for="sqlQuery" class="form-label">{{ $t("Query") }}</label>
                                     <textarea id="sqlQuery" v-model="monitor.databaseQuery" class="form-control" :placeholder="$t('Example:', [ 'SELECT 1' ])"></textarea>

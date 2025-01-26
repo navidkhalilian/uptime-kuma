@@ -504,6 +504,7 @@
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling",
     "confirmUninstallPlugin": "Are you sure want to uninstall this plugin?",
+    "databaseMonitorType": "Database Monitor Type",
     "notificationRegional": "Regional",
     "Clone Monitor": "Clone Monitor",
     "Clone": "Clone",
