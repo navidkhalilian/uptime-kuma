@@ -1461,7 +1461,7 @@ let needSetup = false;
         socket.on("testNotification", async (notification, callback) => {
             try {
                 checkLogin(socket);
-
+console.log('notification+++',notification);
                 let msg = await Notification.send(notification, notification.name + " Testing");
 
                 callback({

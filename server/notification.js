@@ -69,6 +69,7 @@ const Cellsynt = require("./notification-providers/cellsynt");
 const Onesender = require("./notification-providers/onesender");
 const Wpush = require("./notification-providers/wpush");
 const SendGrid = require("./notification-providers/send-grid");
+const Bale = require("./notification-providers/bale");
 
 class Notification {
 
@@ -86,6 +87,7 @@ class Notification {
         this.providerList = {};
 
         const list = [
+            new Bale(),
             new Alerta(),
             new AlertNow(),
             new AliyunSms(),
@@ -178,6 +180,7 @@ class Notification {
      * @throws Error with fail msg
      */
     static async send(notification, msg, monitorJSON = null, heartbeatJSON = null) {
+       console.log('notification+++',notification);
         if (this.providerList[notification.type]) {
             return this.providerList[notification.type].send(notification, msg, monitorJSON, heartbeatJSON);
         } else {

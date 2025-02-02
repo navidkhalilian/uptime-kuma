@@ -428,6 +428,7 @@
     "Workstation": "محل کار (Workstation)",
     "Packet Size": "سایز پکت",
     "wayToGetTelegramToken": "شما میتوانید توکن خود را از {0} دریافت کنید.",
+    "wayToGetBaleToken": "شما میتوانید توکن خود را از {0} دریافت کنید.",
     "Chat ID": "آیدی چت",
     "wayToGetLineNotifyToken": "می‌توانید یک توکن جهت دسترسی از {0} دریافت کنید",
     "Examples": "مثال ها",

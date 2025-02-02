@@ -27,6 +27,16 @@ RUN mkdir ./data
 # ⭐ Main Image
 ############################################
 FROM $BASE_IMAGE AS release
+## Install Oracle client tools
+RUN apt update
+RUN apt install -y wget
+RUN sudo apt-get install -y libaio1 alien
+COPY ./docker/oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm
+RUN sudo alien -i --scripts oracle-instantclient*.rpm
+RUN rm -f oracle-instantclient*.rpm
+
+
+
 WORKDIR /app
 
 LABEL org.opencontainers.image.source="https://github.com/louislam/uptime-kuma"
@@ -51,10 +61,17 @@ USER node
 # Mark as Nightly
 ############################################
 FROM release AS nightly
+
+
+
+
 RUN npm run mark-as-nightly
+
 
 FROM nightly AS nightly-rootless
 USER node
+
+
 
 ############################################
 # Build an image for testing pr
@@ -76,6 +93,7 @@ RUN apt update \
 RUN rm -rf ./* && chown node /app
 
 USER node
+RUN
 RUN git config --global user.email "no-reply@no-reply.com"
 RUN git config --global user.name "PR Tester"
 RUN git clone https://github.com/louislam/uptime-kuma.git .
