@@ -68,13 +68,20 @@
                                     <font-awesome-icon icon="info-circle" /> {{ $t("Help") }}
                                 </a>
                             </li>
-
+                            <li v-if="$root.loggedIn && $root.socket.token !== 'autoLogin'">
+                                <router-link to="/report" class="dropdown-item" :class="{ active: $route.path.includes('settings') }">
+                                    <font-awesome-icon icon="list" />
+                                    {{ $t("HistoryReport") }}
+                                </router-link>
+                           
+                            </li>
                             <li v-if="$root.loggedIn && $root.socket.token !== 'autoLogin'">
                                 <button class="dropdown-item" @click="$root.logout">
                                     <font-awesome-icon icon="sign-out-alt" />
                                     {{ $t("Logout") }}
                                 </button>
                             </li>
+                           
                         </ul>
                     </div>
                 </li>

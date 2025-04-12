@@ -32,6 +32,7 @@ const Security = () => import("./components/settings/Security.vue");
 import Proxies from "./components/settings/Proxies.vue";
 import About from "./components/settings/About.vue";
 import RemoteBrowsers from "./components/settings/RemoteBrowsers.vue";
+import ReportPage from "./pages/ReportPage.vue";
 
 const routes = [
     {
@@ -190,6 +191,10 @@ const routes = [
         path: "/:pathMatch(.*)*",
         component: NotFound,
     },
+    {
+        path: "/report",
+        component: ReportPage
+    }
 ];
 
 export const router = createRouter({

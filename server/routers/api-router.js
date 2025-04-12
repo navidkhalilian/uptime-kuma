@@ -11,7 +11,15 @@ const { R } = require("redbean-node");
 const apicache = require("../modules/apicache");
 const Monitor = require("../model/monitor");
 const dayjs = require("dayjs");
-const { UP, MAINTENANCE, DOWN, PENDING, flipStatus, log, badgeConstants } = require("../../src/util");
+const {
+    UP,
+    MAINTENANCE,
+    DOWN,
+    PENDING,
+    flipStatus,
+    log,
+    badgeConstants,
+} = require("../../src/util");
 const StatusPage = require("../model/status_page");
 const { UptimeKumaServer } = require("../uptime-kuma-server");
 const { makeBadge } = require("badge-maker");
@@ -25,10 +33,16 @@ let cache = apicache.middleware;
 const server = UptimeKumaServer.getInstance();
 let io = server.io;
 
+router.get("/api/history-report", async (request, response) => {
+    allowDevAllOrigin(response);
+
+    let result = {};
+    response.json(result);
+});
 router.get("/api/entry-page", async (request, response) => {
     allowDevAllOrigin(response);
 
-    let result = { };
+    let result = {};
     let hostname = request.hostname;
     if ((await setting("trustProxy")) && request.headers["x-forwarded-host"]) {
         hostname = request.headers["x-forwarded-host"];
@@ -53,10 +67,10 @@ router.all("/api/push/:pushToken", async (request, response) => {
         let status = (statusString === "up") ? UP : DOWN;
 
         let monitor = await R.findOne("monitor", " push_token = ? AND active = 1 ", [
-            pushToken
+            pushToken,
         ]);
 
-        if (! monitor) {
+        if (!monitor) {
             throw new Error("Monitor not found or not active.");
         }
 
@@ -127,11 +141,67 @@ router.all("/api/push/:pushToken", async (request, response) => {
     } catch (e) {
         response.status(404).json({
             ok: false,
-            msg: e.message
+            msg: e.message,
         });
     }
 });
 
+router.get("/api/report", async (request, response) => {
+    allowAllOrigin(response);
+
+
+    const {
+        page = 1,
+        limit = 10,
+        q = "",
+
+    } = request.query;
+
+
+    let query = `
+    SELECT heartbeat.id, monitor.name, heartbeat.msg, heartbeat.time, heartbeat.duration
+    FROM heartbeat
+    INNER JOIN monitor ON heartbeat.monitor_id = monitor.id
+
+`;
+
+// If the query string 'q' is not empty, add the condition for 'msg'
+    let queryParams = [];
+    if (q) {
+
+        query += 'WHERE heartbeat.msg LIKE ?';
+        queryParams.push(`%${q}%`);  // Use '%' for 'contains' behavior
+    }
+    else {
+        query += 'WHERE 1=?';
+        queryParams.push(1);  // Use '%' for 'contains' behavior
+
+    }
+
+// Add pagination parameters (limit and offset)
+    query += ' LIMIT ? OFFSET ?';
+    queryParams.push(limit, (page - 1) * limit);  // Offset is (page - 1) * limit
+console.log('queryParams',queryParams);
+console.log('query',query);
+console.log('q',`%${q}%`);
+// Execute the query with the constructed query string and parameters
+    let data = await R.getAll(query, queryParams);
+
+// Execute the count query
+    let count = await R.count(`
+                 heartbeat
+            `, "msg like ?",
+        [ `%${q}%` ],
+    );
+
+
+    console.log('get report',{items:data,totalCount:count});
+
+
+
+        response.send({items:data,totalCount:count});
+
+});
 router.get("/api/badge/:id/status", cache("5 minutes"), async (request, response) => {
     allowAllOrigin(response);
 
@@ -154,12 +224,14 @@ router.get("/api/badge/:id/status", cache("5 minutes"), async (request, response
         const overrideValue = value !== undefined ? parseInt(value) : undefined;
 
         let publicMonitor = await R.getRow(`
-                SELECT monitor_group.monitor_id FROM monitor_group, \`group\`
+                SELECT monitor_group.monitor_id
+                FROM monitor_group,
+                     \`group\`
                 WHERE monitor_group.group_id = \`group\`.id
-                AND monitor_group.monitor_id = ?
-                AND public = 1
+                  AND monitor_group.monitor_id = ?
+                  AND public = 1
             `,
-        [ requestedMonitorId ]
+            [ requestedMonitorId ],
         );
 
         const badgeValues = { style };
@@ -237,12 +309,14 @@ router.get("/api/badge/:id/uptime/:duration?", cache("5 minutes"), async (reques
         }
 
         let publicMonitor = await R.getRow(`
-                SELECT monitor_group.monitor_id FROM monitor_group, \`group\`
+                SELECT monitor_group.monitor_id
+                FROM monitor_group,
+                     \`group\`
                 WHERE monitor_group.group_id = \`group\`.id
-                AND monitor_group.monitor_id = ?
-                AND public = 1
+                  AND monitor_group.monitor_id = ?
+                  AND public = 1
             `,
-        [ requestedMonitorId ]
+            [ requestedMonitorId ],
         );
 
         const badgeValues = { style };
@@ -362,21 +436,24 @@ router.get("/api/badge/:id/avg-response/:duration?", cache("5 minutes"), async (
             request.params.duration
                 ? parseInt(request.params.duration, 10)
                 : 24,
-            720
+            720,
         );
         const overrideValue = value && parseFloat(value);
 
         const sqlHourOffset = Database.sqlHourOffset();
 
         const publicAvgPing = parseInt(await R.getCell(`
-            SELECT AVG(ping) FROM monitor_group, \`group\`, heartbeat
-            WHERE monitor_group.group_id = \`group\`.id
-            AND heartbeat.time > ${sqlHourOffset}
-            AND heartbeat.ping IS NOT NULL
-            AND public = 1
-            AND heartbeat.monitor_id = ?
+                SELECT AVG(ping)
+                FROM monitor_group,
+                     \`group\`,
+                     heartbeat
+                WHERE monitor_group.group_id = \`group\`.id
+                  AND heartbeat.time > ${sqlHourOffset}
+                  AND heartbeat.ping IS NOT NULL
+                  AND public = 1
+                  AND heartbeat.monitor_id = ?
             `,
-        [ -requestedDuration, requestedMonitorId ]
+            [ -requestedDuration, requestedMonitorId ],
         ));
 
         const badgeValues = { style };
@@ -438,12 +515,14 @@ router.get("/api/badge/:id/cert-exp", cache("5 minutes"), async (request, respon
         const overrideValue = value && parseFloat(value);
 
         let publicMonitor = await R.getRow(`
-            SELECT monitor_group.monitor_id FROM monitor_group, \`group\`
-            WHERE monitor_group.group_id = \`group\`.id
-            AND monitor_group.monitor_id = ?
-            AND public = 1
+                SELECT monitor_group.monitor_id
+                FROM monitor_group,
+                     \`group\`
+                WHERE monitor_group.group_id = \`group\`.id
+                  AND monitor_group.monitor_id = ?
+                  AND public = 1
             `,
-        [ requestedMonitorId ]
+            [ requestedMonitorId ],
         );
 
         const badgeValues = { style };
@@ -523,12 +602,14 @@ router.get("/api/badge/:id/response", cache("5 minutes"), async (request, respon
         const overrideValue = value && parseFloat(value);
 
         let publicMonitor = await R.getRow(`
-            SELECT monitor_group.monitor_id FROM monitor_group, \`group\`
-            WHERE monitor_group.group_id = \`group\`.id
-            AND monitor_group.monitor_id = ?
-            AND public = 1
+                SELECT monitor_group.monitor_id
+                FROM monitor_group,
+                     \`group\`
+                WHERE monitor_group.group_id = \`group\`.id
+                  AND monitor_group.monitor_id = ?
+                  AND public = 1
             `,
-        [ requestedMonitorId ]
+            [ requestedMonitorId ],
         );
 
         const badgeValues = { style };
@@ -540,7 +621,7 @@ router.get("/api/badge/:id/response", cache("5 minutes"), async (request, respon
             badgeValues.color = badgeConstants.naColor;
         } else {
             const heartbeat = await Monitor.getPreviousHeartbeat(
-                requestedMonitorId
+                requestedMonitorId,
             );
 
             if (!heartbeat.ping) {
