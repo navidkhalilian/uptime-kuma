@@ -141,7 +141,8 @@
         "tcp-ping": "~0.1.1",
         "thirty-two": "~1.0.2",
         "tough-cookie": "~4.1.3",
-        "ws": "^8.13.0"
+        "ws": "^8.13.0",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "@actions/github": "~5.1.1",

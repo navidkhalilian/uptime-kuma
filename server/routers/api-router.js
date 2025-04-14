@@ -149,57 +149,100 @@ router.all("/api/push/:pushToken", async (request, response) => {
 router.get("/api/report", async (request, response) => {
     allowAllOrigin(response);
 
-
-    const {
+    let {
         page = 1,
         limit = 10,
-        q = "",
-
+        id = "",
+        name = "",
+        message = "",
+        from = "",
+        to = "",
+        duration = "",
+        status = "",
+        active = "",
+        retries = "",
     } = request.query;
 
+    if (limit === "any") {
+        limit = Number.MAX_SAFE_INTEGER;
+    }
 
-    let query = `
-    SELECT heartbeat.id, monitor.name, heartbeat.msg, heartbeat.time, heartbeat.duration
+    let baseQuery = `
     FROM heartbeat
     INNER JOIN monitor ON heartbeat.monitor_id = monitor.id
-
+    WHERE 1 = 1
 `;
 
-// If the query string 'q' is not empty, add the condition for 'msg'
-    let queryParams = [];
-    if (q) {
+    let filters = [];
+    let params = [];
 
-        query += 'WHERE heartbeat.msg LIKE ?';
-        queryParams.push(`%${q}%`);  // Use '%' for 'contains' behavior
+// Dynamically build filter conditions
+    if (id) {
+        filters.push("AND heartbeat.id LIKE ?");
+        params.push(`%${id}%`);
     }
-    else {
-        query += 'WHERE 1=?';
-        queryParams.push(1);  // Use '%' for 'contains' behavior
-
+    if (name) {
+        filters.push("AND monitor.name LIKE ?");
+        params.push(`%${name}%`);
+    }
+    if (message) {
+        filters.push("AND heartbeat.msg LIKE ?");
+        params.push(`%${message}%`);
+    }
+    if (duration) {
+        filters.push("AND heartbeat.duration LIKE ?");
+        params.push(`%${duration}%`);
+    }
+    if (status) {
+        filters.push("AND heartbeat.status LIKE ?");
+        params.push(`%${status}%`);
+    }
+    if (active) {
+        filters.push("AND monitor.active LIKE ?");
+        params.push(`%${active}%`);
+    }
+    if (retries) {
+        filters.push("AND heartbeat.retries LIKE ?");
+        params.push(`%${retries}%`);
+    }
+    if (from && to) {
+        filters.push("AND heartbeat.time BETWEEN ? and ?");
+        params.push( from); // Remove % for proper timestamp comparison
+        params.push( to); // Remove % for proper timestamp comparison
     }
 
-// Add pagination parameters (limit and offset)
-    query += ' LIMIT ? OFFSET ?';
-    queryParams.push(limit, (page - 1) * limit);  // Offset is (page - 1) * limit
-console.log('queryParams',queryParams);
-console.log('query',query);
-console.log('q',`%${q}%`);
-// Execute the query with the constructed query string and parameters
-    let data = await R.getAll(query, queryParams);
 
-// Execute the count query
-    let count = await R.count(`
-                 heartbeat
-            `, "msg like ?",
-        [ `%${q}%` ],
-    );
+// Merge filters into the base query
+    let finalQuery = baseQuery + " " + filters.join(" ");
 
+// ✅ Count query
+    let countQuery = `SELECT COUNT(*) AS total ` + finalQuery;
+    let countParams = [ ...params ];
+    let countResult = await R.getRow(countQuery, countParams);
+    let totalCount = countResult.total;
 
-    console.log('get report',{items:data,totalCount:count});
+// ✅ Data query with pagination
+    let dataQuery = `
+    SELECT heartbeat.id,
+           monitor.name,
+           heartbeat.msg,
+           heartbeat.time,
+           heartbeat.duration,
+           heartbeat.status,
+           monitor.active,
+           heartbeat.retries
+` + finalQuery + `
+    ORDER BY heartbeat.id DESC
+    LIMIT ? OFFSET ?
+`;
+    let dataParams = [ ...params, parseInt(limit), (parseInt(page) - 1) * parseInt(limit) ];
+    let data = await R.getAll(dataQuery, dataParams);
 
-
-
-        response.send({items:data,totalCount:count});
+// ✅ Send response
+    response.send({
+        items: data,
+        totalCount,
+    });
 
 });
 router.get("/api/badge/:id/status", cache("5 minutes"), async (request, response) => {

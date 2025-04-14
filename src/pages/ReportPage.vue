@@ -1,13 +1,7 @@
 <template>
     <div class="container">
         <!-- Search box -->
-        <input
-            v-model="searchQuery"
-            @input="search"
-            type="text"
-            placeholder="Search..."
-            class="search-box"
-        />
+        
 
         <!-- Data Table -->
         <table class="data-table">
@@ -18,6 +12,87 @@
                 <th>Message</th>
                 <th>Time</th>
                 <th>Duration</th>
+                <th>Status</th>
+                <th>Active</th>
+                <th>Retries</th>
+            </tr>
+            <tr>
+                <th>
+                    <input
+                        v-model="id"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
+                <th>
+                    <input
+                        v-model="name"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
+                <th>
+                    <input
+                        v-model="message"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
+                <th>
+                    <div class="group-search-box">
+                    <input
+                        v-model="from"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                        placeholder="from"
+
+                    />
+                    <input
+                        v-model="to"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                        placeholder="to"
+
+                    />
+                    </div>
+                </th>
+                <th>
+                    <input
+                        v-model="duration"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
+                <th>
+                    <input
+                        v-model="status"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
+                <th>
+                    <input
+                        v-model="active"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
+                <th>
+                    <input
+                        v-model="retries"
+                        @input="search"
+                        type="text"
+                        class="search-box"
+                    />
+                </th>
             </tr>
             </thead>
             <tbody>
@@ -30,6 +105,9 @@
                 <td>{{ item.msg }}</td>
                 <td>{{ item.time }}</td>
                 <td>{{ item.duration }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.active }}</td>
+                <td>{{ item.retries }}</td>
             </tr>
             </tbody>
         </table>
@@ -44,6 +122,8 @@
             <select v-model="pagination.itemsPerPage" @change="updateItemsPerPage">
                 <option v-for="option in pageOptions" :key="option" :value="option">{{ option }}</option>
             </select>
+            <button @click="exportToExcel">Export to Excel</button>
+
         </div>
     </div>
 </template>
@@ -51,19 +131,29 @@
 
 <script>
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 export default {
     data() {
         return {
             items: [],
             searchQuery: '',
+            id: '',
+            name: '',
+            message: '',
+            from: '',
+            to: '',
+            duration: '',
+            status: '',
+            active: '',
+            retries: '',
             loading: true,
             totalCount: 0,
             pagination: {
                 page: 1,
                 itemsPerPage: 10, // Default items per page
             },
-            pageOptions: [10, 25, 50, 100, 200], // Options for items per page dropdown
+            pageOptions: [10, 25, 50, 100, 200,'any'], // Options for items per page dropdown
         };
     },
     computed: {
@@ -79,7 +169,15 @@ export default {
                     params: {
                         page: this.pagination.page,
                         limit: this.pagination.itemsPerPage,
-                        q: this.searchQuery,
+                        id: this.id,
+                        name: this.name,
+                        message: this.message,
+                        from: this.from,
+                        to: this.to,
+                        duration: this.duration,
+                        status: this.status,
+                        active: this.active,
+                        retries: this.retries
                     },
                 })
                 .then((response) => {
@@ -112,6 +210,20 @@ export default {
         updateItemsPerPage() {
             this.pagination.page = 1; // Reset to first page on items per page change
             this.fetchData();
+        },
+        exportToExcel() {
+            if (!this.items.length) {
+                alert("No data to export.");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(this.items);
+            const workbook = XLSX.utils.book_new();
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+
+            // Save file
+            XLSX.writeFile(workbook, "report.xlsx");
         }
     },
     created() {
@@ -123,7 +235,7 @@ export default {
 
 <style scoped>
 .container {
-    max-width: 1000px;
+    max-width: 100%;
     margin: auto;
     padding: 16px;
 }
@@ -132,6 +244,10 @@ export default {
     padding: 8px;
     width: 100%;
     font-size: 16px;
+}
+.group-search-box {
+    display: flex;
+    width: 100%;
 }
 .data-table {
     width: 100%;
